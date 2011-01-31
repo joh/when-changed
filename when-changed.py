@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-when-changed - execute a command when a file is changed
+when-changed - run a command when a file is changed
 """
 import sys
 import os
@@ -11,12 +11,14 @@ if __name__ == '__main__':
     
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
-        description='execute a command when a file is changed'
+        usage='%(prog)s FILE COMMAND...',
+        description='Run a command when a file is changed'
     )
     
-    parser.add_argument('filename', help='file to watch for changes')
-    parser.add_argument('command', nargs='+',
-        help='command to execute when file is changed')
+    parser.add_argument('filename', metavar='FILE',
+        help='file to watch for changes')
+    parser.add_argument('command', metavar='COMMAND', nargs='+',
+        help='command to run when file is changed')
     
     args = parser.parse_args()
     filename = args.filename
@@ -38,7 +40,7 @@ if __name__ == '__main__':
             t = os.stat(filename).st_mtime
             if t != mtime:
                 mtime = t
-                print filename, "changed"
+                os.system(command)
             
         except OSError as e:
             print e.strerror
