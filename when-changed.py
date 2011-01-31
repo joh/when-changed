@@ -1,31 +1,37 @@
 #!/usr/bin/env python
 """
 when-changed - run a command when a file is changed
+
+Usage: when-changed FILE COMMAND...
 """
 import sys
 import os
 import time
 
+usage = 'Usage: %(prog)s FILE COMMAND...'
+description = 'Run a command when a file is changed'
+
+def print_usage(prog):
+    print usage % {'prog': prog}
+
+def print_help(prog):
+    print_usage(prog)
+    print "\n" + description
+
+
 if __name__ == '__main__':
-    import argparse
+    prog = sys.argv[0]
     
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(
-        usage='%(prog)s FILE COMMAND...',
-        description='Run a command when a file is changed'
-    )
+    if sys.argv[1] in ('-h', '--help'):
+        print_help(prog)
+        exit(0)
     
-    parser.add_argument('filename', metavar='FILE',
-        help='file to watch for changes')
-    parser.add_argument('command', metavar='COMMAND', nargs='+',
-        help='command to run when file is changed')
+    if len(sys.argv) < 3:
+        print_usage(prog)
+        exit(1)
     
-    args = parser.parse_args()
-    filename = args.filename
-    command = ' '.join(args.command)
-    
-    #print filename
-    #print command
+    filename = sys.argv[1]
+    command = ' '.join(sys.argv[2:])
     
     # Store initial mtime
     try:
