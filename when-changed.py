@@ -3,12 +3,14 @@
 when-changed - run a command when a file is changed
 
 Usage: when-changed FILE COMMAND...
+       when-changed FILE [FILE ...] -c COMMAND
 """
 import sys
 import os
 import time
 
-usage = 'Usage: %(prog)s FILE COMMAND...'
+usage =  'Usage: %(prog)s FILE COMMAND...'
+usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
 description = 'Run a command when a file is changed'
 
 def print_usage(prog):
@@ -20,37 +22,49 @@ def print_help(prog):
 
 
 if __name__ == '__main__':
-    prog = sys.argv[0]
+    args = sys.argv
+    prog = args.pop(0)
     
-    if sys.argv[1] in ('-h', '--help'):
+    if '-h' in args or '--help' in args:
         print_help(prog)
         exit(0)
     
-    if len(sys.argv) < 3:
+    files = []
+    command = []
+    
+    if '-c' in args:
+        cpos = args.index('-c')
+        files = args[:cpos]
+        command = args[cpos+1:]
+    else:
+        files = [args[0]]
+        command = args[1:]
+    
+    if not files or not command:
         print_usage(prog)
         exit(1)
     
-    filename = sys.argv[1]
-    command = ' '.join(sys.argv[2:])
+    command = ' '.join(command)
     
-    # Store initial mtime
+    # Store initial mtimes
     try:
-        mtime = os.stat(filename).st_mtime
+        mtimes = [os.stat(f).st_mtime for f in files]
     except OSError as e:
         print e
         exit(1)
     
     # Start polling for changes
     while True:
-        try:
-            t = os.stat(filename).st_mtime
-            if t != mtime:
-                mtime = t
-                os.system(command)
-            
-        except OSError as e:
-            print e.strerror
-            # TODO: Exit here?
+        for i, f in enumerate(files):
+            try:
+                t = os.stat(f).st_mtime
+                if t != mtimes[i]:
+                    mtimes[i] = t
+                    os.system(command)
+                
+            except OSError as e:
+                print e.strerror
+                # TODO: Exit here?
         
         time.sleep(0.5)
 

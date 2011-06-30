@@ -1,6 +1,6 @@
-                         when-changed
+                                  when-changed
                           
-              Run a command when a file is changed
+                      Run a command when a file is changed
 
 
     ~ What is it?
@@ -27,4 +27,4 @@
     ~ Usage
       
       when-changed FILE COMMAND...
-
+      when-changed FILE [FILE ...] -c COMMAND
