@@ -53,6 +53,14 @@ if __name__ == '__main__':
         print e
         exit(1)
     
+    # Tell the user what we're doing
+    if len(files) > 1:
+        l = ["'%s'" % f for f in files]
+        s = ', '.join(l[:-1]) + ' or ' + l[-1]
+        print "When %s changes, run '%s'" % (s, command)
+    else:
+        print "When '%s' changes, run '%s'" % (files[0], command)
+    
     # Start polling for changes
     while True:
         for i, f in enumerate(files):
