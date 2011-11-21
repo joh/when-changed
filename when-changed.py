@@ -4,6 +4,9 @@ when-changed - run a command when a file is changed
 
 Usage: when-changed FILE COMMAND...
        when-changed FILE [FILE ...] -c COMMAND
+
+Copyright (c) 2011, Johannes H. Jensen.
+License: BSD, see LICENSE for more details.
 """
 import sys
 import os
