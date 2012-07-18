@@ -65,17 +65,20 @@ if __name__ == '__main__':
         print "When '%s' changes, run '%s'" % (files[0], command)
     
     # Start polling for changes
-    while True:
-        for i, f in enumerate(files):
-            try:
-                t = os.stat(f).st_mtime
-                if t != mtimes[i]:
-                    mtimes[i] = t
-                    os.system(command)
+    try:
+        while True:
+            for i, f in enumerate(files):
+                try:
+                    t = os.stat(f).st_mtime
+                    if t != mtimes[i]:
+                        mtimes[i] = t
+                        os.system(command)
                 
-            except OSError as e:
-                print e.strerror
-                # TODO: Exit here?
+                except OSError as e:
+                    print e.strerror
+                    # TODO: Exit here?
         
-        time.sleep(0.5)
-
+           time.sleep(0.5)
+    except KeyboardInterrupt:
+        print ""
+        exit(0)
