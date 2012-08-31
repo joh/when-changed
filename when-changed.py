@@ -75,8 +75,12 @@ if __name__ == '__main__':
                         os.system(command)
 
                 except OSError as e:
-                    print e.strerror
-                    # TODO: Exit here?
+                    # Some editors (like vim) will first write to a temporary
+                    # file, then delete the original file before renaming the
+                    # temporary file back to the original filename.
+                    # Thus the original file might not exist at the moment
+                    # we do os.stat() so we ignore any errors here.
+                    pass
 
             time.sleep(0.5)
     except KeyboardInterrupt:
