@@ -47,7 +47,13 @@ if __name__ == '__main__':
         print_usage(prog)
         exit(1)
     
-    command = ' '.join(command)
+    def quote(s):
+        if ' ' in s:
+            return "\"" + s + "\""
+        else:
+            return s
+
+    command = ' '.join(map(quote, command))
     
     # Store initial mtimes
     try:
