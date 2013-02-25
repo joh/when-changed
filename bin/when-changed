@@ -1,0 +1,4 @@
+#!/usr/bin/env python2
+
+from whenchanged.whenchanged import main 
+main()
