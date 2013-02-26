@@ -24,7 +24,7 @@ def print_help(prog):
     print "\n" + description
 
 
-if __name__ == '__main__':
+def main():
     args = sys.argv
     prog = args.pop(0)
 
