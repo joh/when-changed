@@ -39,7 +39,7 @@ def main():
         cpos = args.index('-c')
         files = args[:cpos]
         command = args[cpos+1:]
-    else:
+    elif len(args) >= 2:
         files = [args[0]]
         command = args[1:]
 
