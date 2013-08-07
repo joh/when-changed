@@ -14,7 +14,9 @@ import time
 
 usage =  'Usage: %(prog)s FILE COMMAND...'
 usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
-description = 'Run a command when a file is changed'
+description = 'Run a command when a file is changed.\n'
+description += 'You can pass filename to the command\n'
+description += 'by "%f" variable.'
 
 def print_usage(prog):
     print usage % {'prog': prog}
@@ -72,7 +74,7 @@ def main():
                     t = os.stat(f).st_mtime
                     if t != mtimes[i]:
                         mtimes[i] = t
-                        os.system(command)
+                        os.system(command.replace('%f', f))
 
                 except OSError as e:
                     # Some editors (like vim) will first write to a temporary
