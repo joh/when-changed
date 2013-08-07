@@ -11,7 +11,6 @@ License: BSD, see LICENSE for more details.
 import sys
 import os
 import time
-import string
 
 usage =  'Usage: %(prog)s FILE COMMAND...'
 usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
@@ -75,7 +74,7 @@ def main():
                     t = os.stat(f).st_mtime
                     if t != mtimes[i]:
                         mtimes[i] = t
-                        os.system(string.replace(command, '%f', f))
+                        os.system(command.replace('%f', f))
 
                 except OSError as e:
                     # Some editors (like vim) will first write to a temporary
