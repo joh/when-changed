@@ -15,8 +15,7 @@ import time
 usage =  'Usage: %(prog)s FILE COMMAND...'
 usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
 description = 'Run a command when a file is changed.\n'
-description += 'You can pass filename to the command\n'
-description += 'by "%f" variable.'
+description += 'Use %f to pass the filename to the command.\n'
 
 def print_usage(prog):
     print usage % {'prog': prog}
