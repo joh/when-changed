@@ -29,11 +29,10 @@ class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
-    def __init__(self, files, command, exclude=None, verbose=False):
+    def __init__(self, files, command):
         self.files = files
         self.paths = {os.path.realpath(f): f for f in files}
         self.command = command
-        self.verbose = verbose
 
     def run_command(self, file):
         os.system(self.command.replace('%f', file))
@@ -50,7 +49,6 @@ class WhenChanged(pyinotify.ProcessEvent):
     def process_IN_CLOSE_WRITE(self, event):
         path = event.pathname
         if self.is_interested(path):
-            print path, "changed!"
             self.run_command(path)
 
     def run(self):
@@ -59,21 +57,16 @@ class WhenChanged(pyinotify.ProcessEvent):
 
         # Add watches
         mask = pyinotify.IN_CLOSE_WRITE
-        # TODO: Avoid duplicates
         watched = set()
         for p in self.paths:
             if os.path.isdir(p) and p not in watched:
                 # Add directory
-                print "Watch directory", p
                 wdd = wm.add_watch(p, mask, rec=True, auto_add=True)
             else:
                 # Add parent directory
                 path = os.path.dirname(p)
                 if not path in watched:
-                    print "Watch directory", path, "to monitor", p
                     wdd = wm.add_watch(path, mask)
-
-            print wdd
 
         notifier.loop()
 
@@ -111,7 +104,7 @@ def main():
     else:
         print "When '%s' changes, run '%s'" % (files[0], command)
 
-    wc = WhenChanged(files, command, True)
+    wc = WhenChanged(files, command)
     try:
         wc.run()
     except KeyboardInterrupt:
