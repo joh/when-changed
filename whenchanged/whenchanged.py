@@ -10,6 +10,7 @@ License: BSD, see LICENSE for more details.
 """
 import sys
 import os
+import re
 import pyinotify
 
 usage =  'Usage: %(prog)s FILE COMMAND...'
@@ -25,6 +26,9 @@ def print_help(prog):
     print "\n" + description
 
 class WhenChanged(pyinotify.ProcessEvent):
+    # Exclude Vim swap files, its file creation test file 4913 and backup files
+    exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
+
     def __init__(self, files, command, exclude=None, verbose=False):
         self.files = files
         self.paths = {os.path.realpath(f): f for f in files}
@@ -36,7 +40,11 @@ class WhenChanged(pyinotify.ProcessEvent):
 
     def is_interested(self, path):
         dirname = os.path.dirname(path)
-        # TODO: Exclude
+        basename = os.path.basename(path)
+
+        if self.exclude.match(basename):
+            return False
+
         return path in self.paths or dirname in self.paths
 
     def process_IN_CLOSE_WRITE(self, event):
