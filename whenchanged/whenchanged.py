@@ -2,8 +2,8 @@
 """
 when-changed - run a command when a file is changed
 
-Usage: when-changed FILE COMMAND...
-       when-changed FILE [FILE ...] -c COMMAND
+Usage: when-changed [-r] FILE COMMAND...
+       when-changed [-r] FILE [FILE ...] -c COMMAND
 
 Copyright (c) 2011, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
@@ -13,9 +13,10 @@ import os
 import re
 import pyinotify
 
-usage =  'Usage: %(prog)s FILE COMMAND...'
-usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
+usage =  'Usage: %(prog)s [-r] FILE COMMAND...'
+usage += '\n       %(prog)s [-r] FILE [FILE ...] -c COMMAND...'
 description = 'Run a command when a file is changed.\n'
+description += 'FILE can be a directory. Watch recursively with -r.\n'
 description += 'Use %f to pass the filename to the command.\n'
 
 def print_usage(prog):
@@ -29,22 +30,35 @@ class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
-    def __init__(self, files, command):
+    def __init__(self, files, command, recursive=False):
         self.files = files
         self.paths = {os.path.realpath(f): f for f in files}
         self.command = command
+        self.recursive = recursive
 
     def run_command(self, file):
         os.system(self.command.replace('%f', file))
 
     def is_interested(self, path):
-        dirname = os.path.dirname(path)
         basename = os.path.basename(path)
 
         if self.exclude.match(basename):
             return False
 
-        return path in self.paths or dirname in self.paths
+        if path in self.paths:
+            return True
+
+        path = os.path.dirname(path)
+        if path in self.paths:
+            return True
+
+        if self.recursive:
+            while os.path.dirname(path) != path:
+                path = os.path.dirname(path)
+                if path in self.paths:
+                    return True
+
+        return False
 
     def process_IN_CLOSE_WRITE(self, event):
         path = event.pathname
@@ -55,13 +69,13 @@ class WhenChanged(pyinotify.ProcessEvent):
         wm = pyinotify.WatchManager()
         notifier = pyinotify.Notifier(wm, self)
 
-        # Add watches
-        mask = pyinotify.IN_CLOSE_WRITE
+        # Add watches (IN_CREATE is required for auto_add)
+        mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_CREATE
         watched = set()
         for p in self.paths:
             if os.path.isdir(p) and p not in watched:
                 # Add directory
-                wdd = wm.add_watch(p, mask, rec=True, auto_add=True)
+                wdd = wm.add_watch(p, mask, rec=self.recursive, auto_add=self.recursive)
             else:
                 # Add parent directory
                 path = os.path.dirname(p)
@@ -81,6 +95,11 @@ def main():
 
     files = []
     command = []
+    recursive = False
+
+    if args[0] == '-r':
+        recursive = True
+        args.pop(0)
 
     if '-c' in args:
         cpos = args.index('-c')
@@ -104,7 +123,7 @@ def main():
     else:
         print "When '%s' changes, run '%s'" % (files[0], command)
 
-    wc = WhenChanged(files, command)
+    wc = WhenChanged(files, command, recursive)
     try:
         wc.run()
     except KeyboardInterrupt:
