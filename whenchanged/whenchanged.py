@@ -97,7 +97,7 @@ def main():
     command = []
     recursive = False
 
-    if args[0] == '-r':
+    if args and args[0] == '-r':
         recursive = True
         args.pop(0)
 
