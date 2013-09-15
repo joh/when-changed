@@ -13,19 +13,6 @@ import os
 import re
 import pyinotify
 
-usage =  'Usage: %(prog)s [-r] FILE COMMAND...'
-usage += '\n       %(prog)s [-r] FILE [FILE ...] -c COMMAND...'
-description = 'Run a command when a file is changed.\n'
-description += 'FILE can be a directory. Watch recursively with -r.\n'
-description += 'Use %f to pass the filename to the command.\n'
-
-def print_usage(prog):
-    print usage % {'prog': prog}
-
-def print_help(prog):
-    print_usage(prog)
-    print "\n" + description
-
 class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
@@ -73,7 +60,7 @@ class WhenChanged(pyinotify.ProcessEvent):
         mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_CREATE
         watched = set()
         for p in self.paths:
-            if os.path.isdir(p) and p not in watched:
+            if os.path.isdir(p) and not p in watched:
                 # Add directory
                 wdd = wm.add_watch(p, mask, rec=self.recursive, auto_add=self.recursive)
             else:
@@ -84,6 +71,19 @@ class WhenChanged(pyinotify.ProcessEvent):
 
         notifier.loop()
 
+
+usage =  'Usage: %(prog)s [-r] FILE COMMAND...\n'
+usage += '       %(prog)s [-r] FILE [FILE ...] -c COMMAND...'
+description = 'Run a command when a file is changed.\n'
+description += 'FILE can be a directory. Watch recursively with -r.\n'
+description += 'Use %f to pass the filename to the command.\n'
+
+def print_usage(prog):
+    print usage % {'prog': prog}
+
+def print_help(prog):
+    print_usage(prog)
+    print "\n" + description
 
 def main():
     args = sys.argv
