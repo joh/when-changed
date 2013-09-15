@@ -10,7 +10,7 @@ License: BSD, see LICENSE for more details.
 """
 import sys
 import os
-import time
+import pyinotify
 
 usage =  'Usage: %(prog)s FILE COMMAND...'
 usage += '\n       %(prog)s FILE [FILE ...] -c COMMAND...'
@@ -23,6 +23,51 @@ def print_usage(prog):
 def print_help(prog):
     print_usage(prog)
     print "\n" + description
+
+class WhenChanged(pyinotify.ProcessEvent):
+    def __init__(self, files, command, exclude=None, verbose=False):
+        self.files = files
+        self.paths = {os.path.realpath(f): f for f in files}
+        self.command = command
+        self.verbose = verbose
+
+    def run_command(self, file):
+        os.system(self.command.replace('%f', file))
+
+    def is_interested(self, path):
+        dirname = os.path.dirname(path)
+        # TODO: Exclude
+        return path in self.paths or dirname in self.paths
+
+    def process_IN_CLOSE_WRITE(self, event):
+        path = event.pathname
+        if self.is_interested(path):
+            print path, "changed!"
+            self.run_command(path)
+
+    def run(self):
+        wm = pyinotify.WatchManager()
+        notifier = pyinotify.Notifier(wm, self)
+
+        # Add watches
+        mask = pyinotify.IN_CLOSE_WRITE
+        # TODO: Avoid duplicates
+        watched = set()
+        for p in self.paths:
+            if os.path.isdir(p) and p not in watched:
+                # Add directory
+                print "Watch directory", p
+                wdd = wm.add_watch(p, mask, rec=True, auto_add=True)
+            else:
+                # Add parent directory
+                path = os.path.dirname(p)
+                if not path in watched:
+                    print "Watch directory", path, "to monitor", p
+                    wdd = wm.add_watch(path, mask)
+
+            print wdd
+
+        notifier.loop()
 
 
 def main():
@@ -50,13 +95,6 @@ def main():
 
     command = ' '.join(command)
 
-    # Store initial mtimes
-    try:
-        mtimes = [os.stat(f).st_mtime for f in files]
-    except OSError as e:
-        print e
-        exit(1)
-
     # Tell the user what we're doing
     if len(files) > 1:
         l = ["'%s'" % f for f in files]
@@ -65,25 +103,9 @@ def main():
     else:
         print "When '%s' changes, run '%s'" % (files[0], command)
 
-    # Start polling for changes
+    wc = WhenChanged(files, command, True)
     try:
-        while True:
-            for i, f in enumerate(files):
-                try:
-                    t = os.stat(f).st_mtime
-                    if t != mtimes[i]:
-                        mtimes[i] = t
-                        os.system(command.replace('%f', f))
-
-                except OSError as e:
-                    # Some editors (like vim) will first write to a temporary
-                    # file, then delete the original file before renaming the
-                    # temporary file back to the original filename.
-                    # Thus the original file might not exist at the moment
-                    # we do os.stat() so we ignore any errors here.
-                    pass
-
-            time.sleep(0.5)
+        wc.run()
     except KeyboardInterrupt:
-        print ""
+        print
         exit(0)
