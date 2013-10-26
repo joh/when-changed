@@ -1,9 +1,11 @@
 #!/usr/bin/env python
-"""
-when-changed - run a command when a file is changed
+"""%(prog)s - run a command when a file is changed
 
-Usage: when-changed [-r] FILE COMMAND...
-       when-changed [-r] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-r] FILE COMMAND...
+       %(prog)s [-r] FILE [FILE ...] -c COMMAND
+
+FILE can be a directory. Watch recursively with -r.
+Use %%f to pass the filename to the command.
 
 Copyright (c) 2011, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
@@ -14,6 +16,7 @@ import sys
 import os
 import re
 import pyinotify
+
 
 class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
@@ -64,7 +67,8 @@ class WhenChanged(pyinotify.ProcessEvent):
         for p in self.paths:
             if os.path.isdir(p) and not p in watched:
                 # Add directory
-                wdd = wm.add_watch(p, mask, rec=self.recursive, auto_add=self.recursive)
+                wdd = wm.add_watch(p, mask, rec=self.recursive,
+                                   auto_add=self.recursive)
             else:
                 # Add parent directory
                 path = os.path.dirname(p)
@@ -74,25 +78,16 @@ class WhenChanged(pyinotify.ProcessEvent):
         notifier.loop()
 
 
-usage =  'Usage: %(prog)s [-r] FILE COMMAND...\n'
-usage += '       %(prog)s [-r] FILE [FILE ...] -c COMMAND...'
-description = 'Run a command when a file is changed.\n'
-description += 'FILE can be a directory. Watch recursively with -r.\n'
-description += 'Use %f to pass the filename to the command.\n'
-
 def print_usage(prog):
-    print(usage % {'prog': prog})
+    print(__doc__ % {'prog': prog}, end='')
 
-def print_help(prog):
-    print_usage(prog)
-    print("\n" + description)
 
 def main():
     args = sys.argv
-    prog = args.pop(0)
+    prog = os.path.basename(args.pop(0))
 
     if '-h' in args or '--help' in args:
-        print_help(prog)
+        print_usage(prog)
         exit(0)
 
     files = []
