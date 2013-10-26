@@ -8,6 +8,8 @@ Usage: when-changed [-r] FILE COMMAND...
 Copyright (c) 2011, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
 """
+from __future__ import print_function
+
 import sys
 import os
 import re
@@ -79,11 +81,11 @@ description += 'FILE can be a directory. Watch recursively with -r.\n'
 description += 'Use %f to pass the filename to the command.\n'
 
 def print_usage(prog):
-    print usage % {'prog': prog}
+    print(usage % {'prog': prog})
 
 def print_help(prog):
     print_usage(prog)
-    print "\n" + description
+    print("\n" + description)
 
 def main():
     args = sys.argv
@@ -119,13 +121,13 @@ def main():
     if len(files) > 1:
         l = ["'%s'" % f for f in files]
         s = ', '.join(l[:-1]) + ' or ' + l[-1]
-        print "When %s changes, run '%s'" % (s, command)
+        print("When %s changes, run '%s'" % (s, command))
     else:
-        print "When '%s' changes, run '%s'" % (files[0], command)
+        print("When '%s' changes, run '%s'" % (files[0], command))
 
     wc = WhenChanged(files, command, recursive)
     try:
         wc.run()
     except KeyboardInterrupt:
-        print
+        print()
         exit(0)
