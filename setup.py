@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from distutils.core import setup
 
 setup(name='when-changed',
       version='0.2.0',
@@ -9,6 +9,6 @@ setup(name='when-changed',
       url='https://github.com/joh/when-changed',
       packages=['whenchanged'],
       scripts=['when-changed'],
-      install_requires=['pyinotify'],
+      requires=['pyinotify'],
       license='BSD'
       )
