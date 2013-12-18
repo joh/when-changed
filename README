@@ -25,6 +25,11 @@
       pyinotify
 
 
+    ~ Installation
+
+      pip install https://github.com/joh/when-changed/archive/master.zip
+
+
     ~ Usage
 
       when-changed FILE COMMAND...
