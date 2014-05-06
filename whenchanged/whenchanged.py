@@ -52,17 +52,25 @@ class WhenChanged(pyinotify.ProcessEvent):
 
         return False
 
-    def process_IN_CLOSE_WRITE(self, event):
-        path = event.pathname
+    def on_change(self, path):
         if self.is_interested(path):
             self.run_command(path)
+
+    def process_IN_CLOSE_WRITE(self, event):
+        self.on_change(event.pathname)
+
+    def process_IN_MOVED_TO(self, event):
+        self.on_change(event.pathname)
 
     def run(self):
         wm = pyinotify.WatchManager()
         notifier = pyinotify.Notifier(wm, self)
 
         # Add watches (IN_CREATE is required for auto_add)
-        mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_CREATE
+        mask = (pyinotify.IN_CLOSE_WRITE |
+                pyinotify.IN_MOVED_TO |
+                pyinotify.IN_CREATE)
+
         watched = set()
         for p in self.paths:
             if os.path.isdir(p) and not p in watched:
