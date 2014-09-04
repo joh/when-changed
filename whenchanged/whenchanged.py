@@ -30,7 +30,7 @@ class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
-    def __init__(self, files, command, recursive=False):
+    def __init__(self, files, command, recursive=False, mods_only=False, renames_only=False):
         self.files = files
         paths = {}
         for f in files:
@@ -38,8 +38,15 @@ class WhenChanged(pyinotify.ProcessEvent):
         self.paths = paths
         self.command = command
         self.recursive = recursive
+        self.mods_only = mods_only
+        self.renames_only = renames_only
 
     def run_command(self, thefile):
+        command = self.command
+        if command is None or len(command) == 0:
+            print(thefile)
+            return
+
         new_command = []
         for item in self.command:
             if item == "%f":
@@ -73,10 +80,12 @@ class WhenChanged(pyinotify.ProcessEvent):
             self.run_command(path)
 
     def process_IN_CLOSE_WRITE(self, event):
-        self.on_change(event.pathname)
+        if not self.renames_only:
+            self.on_change(event.pathname)
 
     def process_IN_MOVED_TO(self, event):
-        self.on_change(event.pathname)
+        if not self.mods_only:
+            self.on_change(event.pathname)
 
     def run(self):
         wm = pyinotify.WatchManager()
@@ -105,8 +114,18 @@ class WhenChanged(pyinotify.ProcessEvent):
 def print_usage(prog):
     print(__doc__ % {'prog': prog}, end='')
 
+class OldArgs(object):
+    mods_only = False
+    renames_only = False
 
-def main():
+    def __init__(self, files, command, recursive):
+        self.files = files
+        self.command = command
+        self.recursive = recursive
+
+def old_parse_args():
+    """
+    """
     args = sys.argv
     prog = os.path.basename(args.pop(0))
 
@@ -134,7 +153,50 @@ def main():
         print_usage(prog)
         exit(1)
 
-    print_command = ' '.join(command)
+    return OldArgs(files, command, recursive)
+
+
+def main():
+    try:
+        import argparse
+    except ImportError:
+        args = old_parse_args()
+    else:
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+                "-r",
+                '--recursive',  
+                help="Recurse into directories.",
+                action='store_true')
+        mutex = parser.add_mutually_exclusive_group()
+        mutex.add_argument(
+                '--renames-only',  
+                help="Only respond to renames; not file modifications.",
+                action='store_true')
+        mutex.add_argument(
+                '--mods-only',  
+                help="Only respond to file modifications.",
+                action='store_true')
+        parser.add_argument(
+                "files",
+                help="The files or folders to watch.",
+                action='store',
+                nargs='+')
+        parser.add_argument(
+                "-c",
+                '--command',  
+                help="The command (and optionally arguments) to execute.",
+                action='store',
+                nargs=argparse.REMAINDER,
+                metavar='ARG')
+        args = parser.parse_args() 
+
+    command = args.command
+    files = args.files
+    if command is not None and len(command) > 0:
+        print_command = ' '.join(command)
+    else:
+        print_command = "<print the file>"
 
     # Tell the user what we're doing
     if len(files) > 1:
@@ -144,9 +206,10 @@ def main():
     else:
         print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive)
+    wc = WhenChanged(**vars(args))
     try:
         wc.run()
     except KeyboardInterrupt:
         print()
         exit(0)
+
