@@ -12,10 +12,18 @@ License: BSD, see LICENSE for more details.
 """
 from __future__ import print_function
 
+# Standard library
 import sys
 import os
 import re
+
+# External modules.
 import pyinotify
+try:
+    import subprocess32 as subprocess
+except ImportError:
+    # Standard library
+    import subprocess
 
 
 class WhenChanged(pyinotify.ProcessEvent):
@@ -24,12 +32,20 @@ class WhenChanged(pyinotify.ProcessEvent):
 
     def __init__(self, files, command, recursive=False):
         self.files = files
-        self.paths = {os.path.realpath(f): f for f in files}
+        paths = {}
+        for f in files:
+            paths[os.path.realpath(f)] = f
+        self.paths = paths
         self.command = command
         self.recursive = recursive
 
-    def run_command(self, file):
-        os.system(self.command.replace('%f', file))
+    def run_command(self, thefile):
+        new_command = []
+        for item in self.command:
+            if item == "%f":
+                item = thefile
+            new_command.append(item)
+        subprocess.call(new_command)
 
     def is_interested(self, path):
         basename = os.path.basename(path)
@@ -118,15 +134,15 @@ def main():
         print_usage(prog)
         exit(1)
 
-    command = ' '.join(command)
+    print_command = ' '.join(command)
 
     # Tell the user what we're doing
     if len(files) > 1:
         l = ["'%s'" % f for f in files]
         s = ', '.join(l[:-1]) + ' or ' + l[-1]
-        print("When %s changes, run '%s'" % (s, command))
+        print("When %s changes, run '%s'" % (s, print_command))
     else:
-        print("When '%s' changes, run '%s'" % (files[0], command))
+        print("When '%s' changes, run '%s'" % (files[0], print_command))
 
     wc = WhenChanged(files, command, recursive)
     try:
