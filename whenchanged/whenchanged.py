@@ -161,6 +161,7 @@ def main():
         import argparse
     except ImportError:
         args = old_parse_args()
+        d = vars(args)
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument(
@@ -178,8 +179,9 @@ def main():
                 help="Only respond to file modifications.",
                 action='store_true')
         parser.add_argument(
-                "files",
-                help="The files or folders to watch.",
+                "arg",
+                help="FILE [COMMAND] ....  Alternatively, if the `-c` option is"
+                    " used to specify the command: FILE [FILE] ...",
                 action='store',
                 nargs='+')
         parser.add_argument(
@@ -190,9 +192,23 @@ def main():
                 nargs=argparse.REMAINDER,
                 metavar='ARG')
         args = parser.parse_args() 
+        command = args.command
+        files_or_cmd = args.arg
+        if command is not None and len(command) > 0:
+            files = list(files_or_cmd)
+        else:
+            if len(files_or_cmd) == 1:
+                files = list(files_or_cmd)
+            else:
+                files = files_or_cmd[:1]
+                command = files_or_cmd[1:]
+        d = vars(args)
+        del d['arg']
+        d['files'] = files
+        d['command'] = command
 
-    command = args.command
-    files = args.files
+    command = d['command']
+    files = d['files']
     if command is not None and len(command) > 0:
         print_command = ' '.join(command)
     else:
@@ -206,7 +222,7 @@ def main():
     else:
         print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(**vars(args))
+    wc = WhenChanged(**d)
     try:
         wc.run()
     except KeyboardInterrupt:
