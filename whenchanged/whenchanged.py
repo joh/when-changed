@@ -89,15 +89,15 @@ class WhenChanged(pyinotify.ProcessEvent):
 
         watched = set()
         for p in self.paths:
-            if os.path.isdir(p) and not p in watched:
+            if os.path.isdir(p) and p not in watched:
                 # Add directory
-                wdd = wm.add_watch(p, mask, rec=self.recursive,
-                                   auto_add=self.recursive)
+                wm.add_watch(p, mask, rec=self.recursive,
+                             auto_add=self.recursive)
             else:
                 # Add parent directory
                 path = os.path.dirname(p)
-                if not path in watched:
-                    wdd = wm.add_watch(path, mask)
+                if path not in watched:
+                    wm.add_watch(path, mask)
 
         notifier.loop()
 
