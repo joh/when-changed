@@ -35,3 +35,5 @@
 
       when-changed FILE COMMAND...
       when-changed FILE [FILE ...] -c COMMAND
+      when-changed -r DIR -c COMMAND
+      when-changed -r DIR -s py,js,css -c COMMAND
