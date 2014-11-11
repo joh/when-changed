@@ -32,12 +32,14 @@ def run_once(fn):
     When event trigger interval less than 0.5s, treat
     as one trigger
     '''
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, event):
         now = datetime.now()
         delta = now - self.last_run_time
-        if delta.total_seconds() > 0.5:
-            fn(self, *args, **kwargs)
+        # Some tmp files will trigger event, use pathname to exclude them.
+        if self.last_path != event.pathname or delta.total_seconds() > 0.5:
+            fn(self, event)
             self.last_run_time = now
+            self.last_path = event.pathname
     return wrapper
 
 
@@ -55,6 +57,7 @@ class WhenChanged(pyinotify.ProcessEvent):
         self.recursive = recursive
         self.suffixes = suffixes.split(',') if suffixes else []
         self.last_run_time = datetime.now()
+        self.last_path = ''
 
     def run_command(self, thefile):
         new_command = []
@@ -97,7 +100,6 @@ class WhenChanged(pyinotify.ProcessEvent):
     @run_once
     def process_IN_MOVED_TO(self, event):
         self.on_change(event.pathname)
-        print('IN_MOVED_TO')
 
     def run(self):
         wm = pyinotify.WatchManager()
