@@ -45,7 +45,7 @@ class WhenChanged(pyinotify.ProcessEvent):
             if item == "%f":
                 item = thefile
             new_command.append(item)
-        subprocess.call(new_command)
+        subprocess.call(new_command, shell=True)
 
     def is_interested(self, path):
         basename = os.path.basename(path)
