@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """%(prog)s - run a command when a file is changed
 
-Usage: %(prog)s [-r] FILE COMMAND...
-       %(prog)s [-r] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-v] [-r] FILE COMMAND...
+       %(prog)s [-v] [-r] FILE [FILE ...] -c COMMAND
 
 FILE can be a directory. Watch recursively with -r.
+Verbose output with -v.
 Use %%f to pass the filename to the command.
 
 Copyright (c) 2011, Johannes H. Jensen.
@@ -117,10 +118,15 @@ def main():
     files = []
     command = []
     recursive = False
+    verbose = False
 
-    if args and args[0] == '-r':
+    if '-v' in args:
+        verbose = True
+        args.remove('-v')
+
+    if '-r' in args:
         recursive = True
-        args.pop(0)
+        args.remove('-r')
 
     if '-c' in args:
         cpos = args.index('-c')
@@ -140,9 +146,11 @@ def main():
     if len(files) > 1:
         l = ["'%s'" % f for f in files]
         s = ', '.join(l[:-1]) + ' or ' + l[-1]
-        print("When %s changes, run '%s'" % (s, print_command))
+        if verbose:
+            print("When %s changes, run '%s'" % (s, print_command))
     else:
-        print("When '%s' changes, run '%s'" % (files[0], print_command))
+        if verbose:
+            print("When '%s' changes, run '%s'" % (files[0], print_command))
 
     wc = WhenChanged(files, command, recursive)
     try:
