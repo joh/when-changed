@@ -48,10 +48,8 @@ class WhenChanged(pyinotify.ProcessEvent):
                 return
         new_command = []
         for item in self.command:
-            if item == "%f":
-                item = thefile
-            new_command.append(item)
-        subprocess.call(new_command, shell=True)
+            new_command.append(item.replace('%f', thefile))
+        subprocess.call(new_command, shell=(len(new_command) == 1))
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -127,23 +125,24 @@ def main():
     verbose = False
     run_once = False
 
-    flags = []
-    while args[0][0] == '-' and args[0] != '-c':
-        flags.append(args.pop(0))
-
-    if '-v' in flags:
-        verbose = True
-
-    if '-r' in flags:
-        recursive = True
-
-    if '-1' in flags:
-        run_once = True
+    while args and args[0][0] == '-':
+        flag = args.pop(0)
+        if flag == '-v':
+            verbose = True
+        elif flag == '-r':
+            recursive = True
+        elif flag == '-1':
+            run_once = True
+        elif flag == '-c':
+            command = args
+            args = []
+        else:
+            break
 
     if '-c' in args:
         cpos = args.index('-c')
         files = args[:cpos]
-        command = args[cpos+1:]
+        command = args[cpos + 1:]
     elif len(args) >= 2:
         files = [args[0]]
         command = args[1:]
