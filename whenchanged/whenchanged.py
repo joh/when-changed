@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """%(prog)s - run a command when a file is changed
 
-Usage: %(prog)s [-v] [-r] FILE COMMAND...
-       %(prog)s [-v] [-r] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-v] [-r] [-1] FILE COMMAND...
+       %(prog)s [-v] [-r] [-1] FILE [FILE ...] -c COMMAND
 
 FILE can be a directory. Watch recursively with -r.
 Verbose output with -v.
+-1 (run once) to not rerun if changes occured while the command was running.
 Use %%f to pass the filename to the command.
 
 Copyright (c) 2011, Johannes H. Jensen.
@@ -17,8 +18,7 @@ from __future__ import print_function
 import sys
 import os
 import re
-
-# External modules.
+import time
 import pyinotify
 try:
     import subprocess32 as subprocess
@@ -31,7 +31,7 @@ class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
-    def __init__(self, files, command, recursive=False):
+    def __init__(self, files, command, recursive=False, run_once=False):
         self.files = files
         paths = {}
         for f in files:
@@ -39,14 +39,20 @@ class WhenChanged(pyinotify.ProcessEvent):
         self.paths = paths
         self.command = command
         self.recursive = recursive
+        self.run_once = run_once
+        self.last_run = 0
 
     def run_command(self, thefile):
+        if self.run_once:
+            if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
+                return
         new_command = []
         for item in self.command:
             if item == "%f":
                 item = thefile
             new_command.append(item)
         subprocess.call(new_command, shell=True)
+        self.last_run = time.time()
 
     def is_interested(self, path):
         basename = os.path.basename(path)
@@ -119,14 +125,20 @@ def main():
     command = []
     recursive = False
     verbose = False
+    run_once = False
 
-    if '-v' in args:
+    flags = []
+    while args[0][0] == '-' and args[0] != '-c':
+        flags.append(args.pop(0))
+
+    if '-v' in flags:
         verbose = True
-        args.remove('-v')
 
-    if '-r' in args:
+    if '-r' in flags:
         recursive = True
-        args.remove('-r')
+
+    if '-1' in flags:
+        run_once = True
 
     if '-c' in args:
         cpos = args.index('-c')
@@ -152,7 +164,7 @@ def main():
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive)
+    wc = WhenChanged(files, command, recursive, run_once)
     try:
         wc.run()
     except KeyboardInterrupt:
