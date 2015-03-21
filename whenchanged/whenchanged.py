@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """%(prog)s - run a command when a file is changed
 
-Usage: %(prog)s [-v] [-r] [-1] FILE COMMAND...
-       %(prog)s [-v] [-r] [-1] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-v] [-r] [-1] [-s] FILE COMMAND...
+       %(prog)s [-v] [-r] [-1] [-s] FILE [FILE ...] -c COMMAND
 
 FILE can be a directory. Watch recursively with -r.
 Verbose output with -v.
 -1 (run once) to not rerun if changes occured while the command was running.
+-s (run at start) to run the command immediately at start.
 Use %%f to pass the filename to the command.
 
 Copyright (c) 2011, Johannes H. Jensen.
@@ -124,6 +125,7 @@ def main():
     recursive = False
     verbose = False
     run_once = False
+    run_at_start = False
 
     while args and args[0][0] == '-':
         flag = args.pop(0)
@@ -133,6 +135,8 @@ def main():
             recursive = True
         elif flag == '-1':
             run_once = True
+        elif flag == '-s':
+            run_at_start = True
         elif flag == '-c':
             command = args
             args = []
@@ -164,6 +168,10 @@ def main():
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
     wc = WhenChanged(files, command, recursive, run_once)
+
+    if run_at_start:
+        wc.run_command('')
+
     try:
         wc.run()
     except KeyboardInterrupt:
