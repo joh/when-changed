@@ -87,7 +87,7 @@ class WhenChanged(pyinotify.ProcessEvent):
 
     def run(self):
         if self.run_at_start:
-            self.run_command('')
+            self.run_command('/dev/null')
 
         wm = pyinotify.WatchManager()
         notifier = pyinotify.Notifier(wm, self)
