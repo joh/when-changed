@@ -32,7 +32,7 @@ class WhenChanged(pyinotify.ProcessEvent):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
-    def __init__(self, files, command, recursive=False, run_once=False):
+    def __init__(self, files, command, recursive=False, run_once=False, run_at_start=False):
         self.files = files
         paths = {}
         for f in files:
@@ -41,6 +41,7 @@ class WhenChanged(pyinotify.ProcessEvent):
         self.command = command
         self.recursive = recursive
         self.run_once = run_once
+        self.run_at_start = run_at_start
         self.last_run = 0
 
     def run_command(self, thefile):
@@ -85,6 +86,9 @@ class WhenChanged(pyinotify.ProcessEvent):
         self.on_change(event.pathname)
 
     def run(self):
+        if self.run_at_start:
+            self.run_command('')
+
         wm = pyinotify.WatchManager()
         notifier = pyinotify.Notifier(wm, self)
 
@@ -167,10 +171,7 @@ def main():
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive, run_once)
-
-    if run_at_start:
-        wc.run_command('')
+    wc = WhenChanged(files, command, recursive, run_once, run_at_start)
 
     try:
         wc.run()
