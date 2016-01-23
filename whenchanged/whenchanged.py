@@ -20,7 +20,8 @@ import sys
 import os
 import re
 import time
-import pyinotify
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 try:
     import subprocess32 as subprocess
 except ImportError:
@@ -28,7 +29,7 @@ except ImportError:
     import subprocess
 
 
-class WhenChanged(pyinotify.ProcessEvent):
+class WhenChanged(FileSystemEventHandler):
     # Exclude Vim swap files, its file creation test file 4913 and backup files
     exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
 
@@ -79,35 +80,40 @@ class WhenChanged(pyinotify.ProcessEvent):
         if self.is_interested(path):
             self.run_command(path)
 
-    def process_IN_CLOSE_WRITE(self, event):
-        self.on_change(event.pathname)
+    def on_created(self, event):
+        if not event.is_directory:
+            self.on_change(event.src_path)
 
-    def process_IN_MOVED_TO(self, event):
-        self.on_change(event.pathname)
+    def on_modified(self, event):
+        if not event.is_directory:
+            self.on_change(event.src_path)
+
+    def on_moved(self, event):
+        if not event.is_directory:
+            self.on_change(event.dest_path)
 
     def run(self):
         if self.run_at_start:
             self.run_command('/dev/null')
 
-        wm = pyinotify.WatchManager()
-        notifier = pyinotify.Notifier(wm, self)
-
-        # Add watches (IN_CREATE is required for auto_add)
-        mask = (pyinotify.IN_CLOSE_WRITE |
-                pyinotify.IN_MOVED_TO |
-                pyinotify.IN_CREATE)
+        observer = Observer()
 
         for p in self.paths:
             if os.path.isdir(p):
                 # Add directory
-                wdd = wm.add_watch(p, mask, rec=self.recursive,
-                                   auto_add=self.recursive)
+                observer.schedule(self, p, recursive=True)
             else:
                 # Add parent directory
-                path = os.path.dirname(p)
-                wdd = wm.add_watch(path, mask)
+                p = os.path.dirname(p)
+                observer.schedule(self, p)
 
-        notifier.loop()
+        observer.start()
+        try:
+            while True:
+                time.sleep(60 * 60)
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
 
 
 def print_usage(prog):
