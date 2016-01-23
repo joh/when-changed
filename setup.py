@@ -8,6 +8,6 @@ setup(name='when-changed',
       url='https://github.com/joh/when-changed',
       packages=['whenchanged'],
       scripts=['when-changed'],
-      install_requires=['pyinotify'],
+      install_requires=['watchdog'],
       license='BSD'
       )

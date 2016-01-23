@@ -22,8 +22,7 @@
     ~ What do I need?
 
       Python 2.6+
-      pyinotify
-      Linux ≥ 2.6.13
+      watchdog
 
 
     ~ Installation
