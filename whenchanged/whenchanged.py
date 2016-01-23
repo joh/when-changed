@@ -45,6 +45,18 @@ class WhenChanged(FileSystemEventHandler):
         self.run_at_start = run_at_start
         self.last_run = 0
 
+        self.observer = Observer(timeout=0.1)
+
+        for p in self.paths:
+            if os.path.isdir(p):
+                # Add directory
+                self.observer.schedule(self, p, recursive=True)
+            else:
+                # Add parent directory
+                p = os.path.dirname(p)
+                self.observer.schedule(self, p)
+
+
     def run_command(self, thefile):
         if self.run_once:
             if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
@@ -81,6 +93,10 @@ class WhenChanged(FileSystemEventHandler):
             self.run_command(path)
 
     def on_created(self, event):
+        if self.observer.__class__.__name__ == 'InotifyObserver':
+            # inotify also generates modified events for created files
+            return
+
         if not event.is_directory:
             self.on_change(event.src_path)
 
@@ -96,24 +112,13 @@ class WhenChanged(FileSystemEventHandler):
         if self.run_at_start:
             self.run_command('/dev/null')
 
-        observer = Observer()
-
-        for p in self.paths:
-            if os.path.isdir(p):
-                # Add directory
-                observer.schedule(self, p, recursive=True)
-            else:
-                # Add parent directory
-                p = os.path.dirname(p)
-                observer.schedule(self, p)
-
-        observer.start()
+        self.observer.start()
         try:
             while True:
                 time.sleep(60 * 60)
         except KeyboardInterrupt:
-            observer.stop()
-        observer.join()
+            self.observer.stop()
+        self.observer.join()
 
 
 def print_usage(prog):
