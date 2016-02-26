@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """%(prog)s - run a command when a file is changed
 
-Usage: %(prog)s [-vr1s] FILE COMMAND...
-       %(prog)s [-vr1s] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-vr1sa] FILE COMMAND...
+       %(prog)s [-vr1sa] FILE [FILE ...] -c COMMAND
 
 FILE can be a directory. Use %%f to pass the filename to the command.
 
