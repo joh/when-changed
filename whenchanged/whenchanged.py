@@ -11,6 +11,7 @@ Options:
 -v Verbose output
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
+-a Run command for any files
 
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
@@ -155,6 +156,8 @@ def main():
         elif flag == '-c':
             command = args
             args = []
+        elif flag == '-a':
+            WhenChanged.is_interested = lambda s, p: True
         else:
             break
 
