@@ -7,7 +7,8 @@ setup(name='when-changed',
       author_email='joh@pseudoberries.com',
       url='https://github.com/joh/when-changed',
       packages=['whenchanged'],
-      scripts=['when-changed'],
-      install_requires=['watchdog'],
+      entry_points={
+            'console_scripts': ('when-changed = whenchanged.whenchanged:main')
+      },      install_requires=['watchdog'],
       license='BSD'
       )
