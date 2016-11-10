@@ -48,6 +48,7 @@ class WhenChanged(FileSystemEventHandler):
         self.last_run = 0
 
         self.observer = Observer(timeout=0.1)
+        self.process = None
 
         for p in self.paths:
             if os.path.isdir(p):
@@ -63,11 +64,27 @@ class WhenChanged(FileSystemEventHandler):
         if self.run_once:
             if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
                 return
+
+        self.try_stop_current_process()
+
         new_command = []
         for item in self.command:
             new_command.append(item.replace('%f', thefile))
-        subprocess.call(new_command, shell=(len(new_command) == 1))
+
+        self.start_process(new_command)
+
+    def start_process(self, command):
+        is_shell_command = len(command) == 1
+        self.process = subprocess.Popen(command, shell=is_shell_command)
         self.last_run = time.time()
+
+    def try_stop_current_process(self):
+        try:
+            self.process.kill()
+        except AttributeError:
+            pass
+
+        self.process = None
 
     def is_interested(self, path):
         basename = os.path.basename(path)
