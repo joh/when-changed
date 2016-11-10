@@ -65,7 +65,8 @@ class WhenChanged(FileSystemEventHandler):
             if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
                 return
 
-        self.try_stop_current_process()
+        if self.is_running_process():
+            self.stop_current_process()
 
         new_command = []
         for item in self.command:
@@ -78,13 +79,11 @@ class WhenChanged(FileSystemEventHandler):
         self.process = subprocess.Popen(command, shell=is_shell_command)
         self.last_run = time.time()
 
-    def try_stop_current_process(self):
-        try:
-            self.process.kill()
-        except AttributeError:
-            pass
+    def stop_current_process(self):
+        self.process.kill()
 
-        self.process = None
+    def is_running_process(self):
+        return bool(self.process) and self.process.poll() is None
 
     def is_interested(self, path):
         basename = os.path.basename(path)
