@@ -34,3 +34,8 @@
 
       when-changed FILE COMMAND...
       when-changed FILE [FILE ...] -c COMMAND
+
+      `%f` gets replaced with the file that changed:
+
+      when-changed FILE [FILE ...] -c echo '%f changed'
+
