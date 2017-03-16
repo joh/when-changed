@@ -32,8 +32,19 @@ except ImportError:
 
 
 class WhenChanged(FileSystemEventHandler):
-    # Exclude Vim swap files, its file creation test file 4913 and backup files
-    exclude = re.compile(r'^\..*\.sw[px]*$|^4913$|.~$')
+    # files to exclude from being watched
+    exclude = re.compile(r'|'.join(r'(.+/)?'+ a for a in [
+        # Vim swap files
+        r'\..*\.sw[px]*$',
+        # file creation test file 4913
+        r'4913$',
+        # backup files
+        r'.~$',
+        # git directories
+        r'\.git/?',
+        # __pycache__ directories
+        r'__pycache__/?',
+        ]))
 
     def __init__(self, files, command, recursive=False, run_once=False, run_at_start=False):
         self.files = files
@@ -86,9 +97,7 @@ class WhenChanged(FileSystemEventHandler):
         return bool(self.process) and self.process.poll() is None
 
     def is_interested(self, path):
-        basename = os.path.basename(path)
-
-        if self.exclude.match(basename):
+        if self.exclude.match(path):
             return False
 
         if path in self.paths:
