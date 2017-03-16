@@ -3,14 +3,16 @@
 
 Usage: %(prog)s [-vr1s] FILE COMMAND...
        %(prog)s [-vr1s] FILE [FILE ...] -c COMMAND
+       %(prog)s --help
 
 FILE can be a directory. Use %%f to pass the filename to the command.
 
 Options:
--r Watch recursively
--v Verbose output
--1 Don't re-run command if files changed while command was running
--s Run command immediately at start
+-h, --help  Print this help
+-r          Watch recursively
+-v          Verbose output
+-1          Don't re-run command if files changed while command was running
+-s          Run command immediately at start
 
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
@@ -22,6 +24,7 @@ import sys
 import os
 import re
 import time
+from getopt import gnu_getopt
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 try:
@@ -135,7 +138,7 @@ class WhenChanged(FileSystemEventHandler):
 def print_usage(prog):
     print(__doc__ % {'prog': prog}, end='')
 
-def parse_args(args):
+def parse_args(argv):
     """
     Parse the various args and returns a WhenChanged object.
 
@@ -144,12 +147,6 @@ def parse_args(args):
 
     The function raises ValueError in case of bad arguments.
     """
-    prog = os.path.basename(args.pop(0))
-
-    if '-h' in args or '--help' in args:
-        print_usage(prog)
-        return None
-
     files = []
     command = []
     recursive = False
@@ -157,32 +154,34 @@ def parse_args(args):
     run_once = False
     run_at_start = False
 
-    while args and args[0][0] == '-':
-        flag = args.pop(0)
-        if flag == '-v':
+    prog = os.path.basename(argv.pop(0))
+    args, shiftargs = gnu_getopt(argv, 'hvr1sc:', longopts=["help"])
+    for arg,argopt in args:
+        if arg == '-h' or arg == '--help':
+            print_usage(prog)
+            return None
+        elif arg == '-v':
             verbose = True
-        elif flag == '-r':
+        elif arg == '-r':
             recursive = True
-        elif flag == '-1':
+        elif arg == '-1':
             run_once = True
-        elif flag == '-s':
+        elif arg == '-s':
             run_at_start = True
-        elif flag == '-c':
-            command = args
+        elif arg == '-c':
+            command = [argopt]
             args = []
         else:
             break
 
-    if '-c' in args:
-        cpos = args.index('-c')
-        files = args[:cpos]
-        command = args[cpos + 1:]
-    elif len(args) >= 2:
-        files = [args[0]]
-        command = args[1:]
-
-    if not files or not command:
+    if command and not shiftargs or not command and len(shiftargs) < 2:
         raise ValueError()
+
+    if command:
+        files = shiftargs
+    else:
+        files = [shiftargs[0]]
+        command = shiftargs[1:]
 
     print_command = ' '.join(command)
 
@@ -203,7 +202,7 @@ def main():
         wc = parse_args(sys.argv)
     except ValueError:
         print_usage(prog)
-        exit(1)
+        exit(2)
 
     if wc is None:
         exit(0)
