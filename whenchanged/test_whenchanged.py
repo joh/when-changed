@@ -1,9 +1,15 @@
 #! /usr/bin/env python
 
 import unittest
-from whenchanged import whenchanged
+try:
+    from whenchanged import whenchanged
+except:
+    import whenchanged
 
 class TestParseArgs(unittest.TestCase):
+    def assertSimilar(self, l1, l2):
+        return self.assertEqual(sorted(l1), sorted(l2))
+
     def test_simple(self):
         wc = whenchanged.parse_args('when-changed /dev/null true'.split(' '))
         self.assertIsNotNone(wc)
@@ -49,7 +55,7 @@ class TestParseArgs(unittest.TestCase):
         wc = whenchanged.parse_args('when-changed /dev/null /dev -c echo changed'.split(' '))
         self.assertIsNotNone(wc)
 
-        self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['echo', 'changed'])
 
     def test_command_c_followed_by_other(self):
@@ -57,7 +63,7 @@ class TestParseArgs(unittest.TestCase):
         self.assertIsNotNone(wc)
 
         self.assertFalse(wc.recursive)
-        self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['ls', '-r'])
 
     def test_command_c_and_options(self):
@@ -65,14 +71,14 @@ class TestParseArgs(unittest.TestCase):
         self.assertIsNotNone(wc)
 
         self.assertTrue(wc.recursive)
-        self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['echo', 'changed'])
 
     def test_command_cattached(self):
         wc = whenchanged.parse_args('when-changed /dev/null /dev -ctrue'.split(' '))
         self.assertIsNotNone(wc)
 
-        self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['true'])
 
 if __name__ == "__main__":
