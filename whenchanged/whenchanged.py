@@ -135,14 +135,20 @@ class WhenChanged(FileSystemEventHandler):
 def print_usage(prog):
     print(__doc__ % {'prog': prog}, end='')
 
+def parse_args(args):
+    """
+    Parse the various args and returns a WhenChanged object.
 
-def main():
-    args = sys.argv
+    The function can return None if the arguments were correct but
+    could not build an object (eg display help).
+
+    The function raises ValueError in case of bad arguments.
+    """
     prog = os.path.basename(args.pop(0))
 
     if '-h' in args or '--help' in args:
         print_usage(prog)
-        exit(0)
+        return None
 
     files = []
     command = []
@@ -176,8 +182,7 @@ def main():
         command = args[1:]
 
     if not files or not command:
-        print_usage(prog)
-        exit(1)
+        raise ValueError()
 
     print_command = ' '.join(command)
 
@@ -191,7 +196,17 @@ def main():
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive, run_once, run_at_start)
+    return WhenChanged(files, command, recursive, run_once, run_at_start)
+
+def main():
+    try:
+        wc = parse_args(sys.argv)
+    except ValueError:
+        print_usage(prog)
+        exit(1)
+
+    if wc is None:
+        exit(0)
 
     try:
         wc.run()
