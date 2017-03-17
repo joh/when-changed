@@ -169,8 +169,22 @@ def parse_args(argv):
         elif arg == '-s':
             run_at_start = True
         elif arg == '-c':
-            command = [argopt]
-            args = []
+            # special case: all following arguments are part of a command
+            r_c = re.compile(r'\-[^\-]*c(.*)')
+            a = [a for a in argv if r_c.match(a)][0]
+            a_i = argv.index(a)
+
+            # two things to take as argument to -c: directly attached and following: -carg1 arg2
+            remain = r_c.match(a).groups()[0]
+            command = []
+            if remain != '':
+                command += [remain]
+            if a_i < len(argv):
+                command += argv[a_i + 1:]
+            
+            # shiftargs ignores any option before -c and any argument after -c
+            shiftargs = [a for a in argv[0:a_i] if not re.match(r'\-', a) ]
+            break
         else:
             break
 
