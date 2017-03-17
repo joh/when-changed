@@ -52,6 +52,14 @@ class TestParseArgs(unittest.TestCase):
         self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['echo', 'changed'])
 
+    def test_command_c_followed_by_other(self):
+        wc = whenchanged.parse_args('when-changed /dev/null /dev -c ls -r'.split(' '))
+        self.assertIsNotNone(wc)
+
+        self.assertFalse(wc.recursive)
+        self.assertEqual(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertEqual(wc.command, ['ls', '-r'])
+
     def test_command_c_and_options(self):
         wc = whenchanged.parse_args('when-changed -r /dev/null /dev -c echo changed'.split(' '))
         self.assertIsNotNone(wc)
