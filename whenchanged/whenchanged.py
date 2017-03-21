@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """%(prog)s - run a command when a file is changed
 
-Usage: %(prog)s [-vr1s] FILE COMMAND...
-       %(prog)s [-vr1s] FILE [FILE ...] -c COMMAND
+Usage: %(prog)s [-vr1sa] FILE COMMAND...
+       %(prog)s [-vr1sa] FILE [FILE ...] -c COMMAND
 
 FILE can be a directory. Use %%f to pass the filename to the command.
 
@@ -11,6 +11,7 @@ Options:
 -v Verbose output
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
+-a Run command for any files
 
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
@@ -164,6 +165,8 @@ def main():
         elif flag == '-c':
             command = args
             args = []
+        elif flag == '-a':
+            WhenChanged.is_interested = lambda s, p: True
         else:
             break
 
