@@ -2,8 +2,7 @@
 """%(prog)s - run a command when a file is changed
 
 Usage: %(prog)s [-vr1s] FILE COMMAND...
-       %(prog)s [-vr1s] FILE [FILE ...] -c COMMAND
-       %(prog)s --help
+       %(prog)s [-vr1s] FILE [FILE ...] -c COMMAND...
 
 FILE can be a directory. Use %%f to pass the filename to the command.
 
@@ -181,7 +180,7 @@ def parse_args(argv):
                 command += [remain]
             if a_i < len(argv):
                 command += argv[a_i + 1:]
-            
+
             # shiftargs ignores any option before -c and any argument after -c
             shiftargs = [a for a in argv[0:a_i] if not re.match(r'\-', a) ]
             break
