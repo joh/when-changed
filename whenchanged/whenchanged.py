@@ -208,11 +208,12 @@ def parse_args(argv):
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    return WhenChanged(files, command, recursive, run_once, run_at_start)
+    return {"files":files, "command":command, "recursive":recursive, "run_once":run_once, "run_at_start":run_at_start}
 
 def main():
     try:
-        wc = parse_args(sys.argv)
+        kw = parse_args(sys.argv)
+        wc = WhenChanged(**kw)
     except ValueError:
         print_usage(prog)
         exit(2)
