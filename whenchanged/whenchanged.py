@@ -139,10 +139,9 @@ def print_usage(prog):
 
 def parse_args(argv):
     """
-    Parse the various args and returns a WhenChanged object.
+    Parse the various args and returns a dictionnary.
 
-    The function can return None if the arguments were correct but
-    could not build an object (eg display help).
+    The function returns None if the arguments were asking for the help.
 
     The function raises ValueError in case of bad arguments.
     """
