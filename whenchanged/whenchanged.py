@@ -154,7 +154,21 @@ def parse_args(argv):
     run_at_start = False
 
     prog = os.path.basename(argv.pop(0))
-    args, shiftargs = gnu_getopt(argv, 'hvr1sc:', longopts=["help"])
+
+    # pre-parsing
+    # -c is a very special case: all following arguments are part of a command and should not be parsed
+    argv_until_c = argv
+    for i, a in enumerate(argv):
+        m = re.match(r'\-[^\-c]*c(.?)', a)
+        if m:
+            split_i = i + 1
+            if not m.group(1):
+                # argument not attached to the option, give it to the parser
+                split_i += 1
+            argv_until_c, command = argv[:split_i], argv[split_i:]
+            break
+
+    args, shiftargs = gnu_getopt(argv_until_c, 'hvr1sc:', longopts=["help"])
     for arg,argopt in args:
         if arg == '-h' or arg == '--help':
             print_usage(prog)
@@ -168,33 +182,18 @@ def parse_args(argv):
         elif arg == '-s':
             run_at_start = True
         elif arg == '-c':
-            # special case: all following arguments are part of a command
-            r_c = re.compile(r'\-[^\-]*c(.*)')
-            a = [a for a in argv if r_c.match(a)][0]
-            a_i = argv.index(a)
-
-            # two things to take as argument to -c: directly attached and following: -carg1 arg2
-            remain = r_c.match(a).groups()[0]
-            command = []
-            if remain != '':
-                command += [remain]
-            if a_i < len(argv):
-                command += argv[a_i + 1:]
-
-            # shiftargs ignores any option before -c and any argument after -c
-            shiftargs = [a for a in argv[0:a_i] if not re.match(r'\-', a) ]
+            command.insert(0, argopt)
+            files = shiftargs
             break
         else:
             break
 
-    if command and not shiftargs or not command and len(shiftargs) < 2:
-        raise ValueError()
-
-    if command:
-        files = shiftargs
-    else:
+    if not command and len(shiftargs) >= 2:
         files = [shiftargs[0]]
         command = shiftargs[1:]
+
+    if not command or not files:
+        raise ValueError('command = "{}" files = "{}"'.format(command, files))
 
     print_command = ' '.join(command)
 
@@ -212,8 +211,7 @@ def parse_args(argv):
 
 def main():
     try:
-        kw = parse_args(sys.argv)
-        wc = WhenChanged(**kw)
+        wc = WhenChanged(**parse_args(sys.argv))
     except ValueError:
         print_usage(prog)
         exit(2)

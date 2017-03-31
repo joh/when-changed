@@ -75,5 +75,17 @@ class TestParseArgs(unittest.TestCase):
         self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
         self.assertEqual(wc.command, ['true'])
 
+    def test_command_c_with_options(self):
+        wc = self.construct_WhenChanged('when-changed /dev/null -v /dev -sccat -s %f')
+
+        self.assertSimilar(list(wc.paths), ['/dev/null', '/dev'])
+        self.assertEqual(wc.command, ['cat', '-s', '%f'])
+
+    def test_command_c_with_options_2(self):
+        wc = self.construct_WhenChanged('when-changed /dev/null -c echo -Z')
+
+        self.assertSimilar(list(wc.paths), ['/dev/null'])
+        self.assertEqual(wc.command, ['echo', '-Z'])
+
 if __name__ == "__main__":
     unittest.main()
