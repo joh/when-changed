@@ -10,6 +10,7 @@ Options:
 -r Watch recursively
 -v Verbose output
 -1 Don't re-run command if files changed while command was running
+-k Kill the currently running command and start a new one upon file change
 -s Run command immediately at start
 
 Copyright (c) 2011-2016, Johannes H. Jensen.
@@ -22,6 +23,8 @@ import sys
 import os
 import re
 import time
+import threading
+import signal
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 try:
@@ -29,6 +32,35 @@ try:
 except ImportError:
     # Standard library
     import subprocess
+
+class CmdRunner():
+    def __init__(self, command, kill_and_replace=False):
+        self.command = command
+        self.kill_and_replace = kill_and_replace
+        self.current_process = None
+        self.all_pids = []
+
+    def run(self, path):
+        new_command = []
+        for item in self.command:
+            new_command.append(item.replace('%f', path))
+        if self.kill_and_replace:
+            if self.current_process != None and self.current_process.returncode == None:
+                self.kill()
+        self.current_process = subprocess.Popen(new_command, stdin=sys.stdin, stdout=sys.stdout, shell=(len(new_command) == 1), preexec_fn=os.setpgrp)
+        self.all_pids.append(self.current_process.pid)
+
+    def kill(self):
+        os.killpg(os.getpgid(self.current_process.pid), signal.SIGTERM)
+        self.current_process.wait()
+
+    def shutdown(self):
+        for pid in self.all_pids:
+            try: 
+                os.killpg(os.getpgid(pid), signal.SIGTERM)
+            except Exception:
+                pass
+
 
 
 class WhenChanged(FileSystemEventHandler):
@@ -46,17 +78,17 @@ class WhenChanged(FileSystemEventHandler):
         r'__pycache__/?',
         ]))
 
-    def __init__(self, files, command, recursive=False, run_once=False, run_at_start=False):
+    def __init__(self, files, recursive=False, run_once=False, run_at_start=False, runner=None):
         self.files = files
         paths = {}
         for f in files:
             paths[os.path.realpath(f)] = f
         self.paths = paths
-        self.command = command
         self.recursive = recursive
         self.run_once = run_once
         self.run_at_start = run_at_start
         self.last_run = 0
+        self.runner = runner 
 
         self.observer = Observer(timeout=0.1)
 
@@ -74,10 +106,7 @@ class WhenChanged(FileSystemEventHandler):
         if self.run_once:
             if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
                 return
-        new_command = []
-        for item in self.command:
-            new_command.append(item.replace('%f', thefile))
-        subprocess.call(new_command, shell=(len(new_command) == 1))
+        self.runner.run(thefile)
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -129,6 +158,7 @@ class WhenChanged(FileSystemEventHandler):
                 time.sleep(60 * 60)
         except KeyboardInterrupt:
             self.observer.stop()
+            self.runner.shutdown()
         self.observer.join()
 
 
@@ -150,6 +180,7 @@ def main():
     verbose = False
     run_once = False
     run_at_start = False
+    kill_and_replace = False
 
     while args and args[0][0] == '-':
         flag = args.pop(0)
@@ -161,6 +192,8 @@ def main():
             run_once = True
         elif flag == '-s':
             run_at_start = True
+        elif flag == '-k':
+            kill_and_replace = True
         elif flag == '-c':
             command = args
             args = []
@@ -191,7 +224,8 @@ def main():
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive, run_once, run_at_start)
+    runner = CmdRunner(command, kill_and_replace)
+    wc = WhenChanged(files, recursive, run_once, run_at_start, runner)
 
     try:
         wc.run()
