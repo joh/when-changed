@@ -8,7 +8,8 @@ FILE can be a directory. Use %%f to pass the filename to the command.
 
 Options:
 -r Watch recursively
--v Verbose output
+-v Verbose output. Multiple -v options increase the verbosity.
+   The maximum is 3: -vvv.
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
 
@@ -22,6 +23,7 @@ import sys
 import os
 import re
 import time
+from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 try:
@@ -46,7 +48,8 @@ class WhenChanged(FileSystemEventHandler):
         r'__pycache__/?',
         ]))
 
-    def __init__(self, files, command, recursive=False, run_once=False, run_at_start=False):
+    def __init__(self, files, command, recursive=False, run_once=False,
+                 run_at_start=False, verbose_mode=0):
         self.files = files
         paths = {}
         for f in files:
@@ -57,6 +60,7 @@ class WhenChanged(FileSystemEventHandler):
         self.run_once = run_once
         self.run_at_start = run_at_start
         self.last_run = 0
+        self.verbose_mode = verbose_mode
 
         self.observer = Observer(timeout=0.1)
 
@@ -77,6 +81,16 @@ class WhenChanged(FileSystemEventHandler):
         new_command = []
         for item in self.command:
             new_command.append(item.replace('%f', thefile))
+        now = datetime.now()
+        print_message = ''
+        if self.verbose_mode > 0:
+            print_message = "'" + self.paths[thefile] + "' changed"
+        if self.verbose_mode > 1:
+            print_message += ' at ' + now.strftime('%F %T')
+        if self.verbose_mode > 2:
+            print_message += '.' + now.strftime('%f') + ", running '" + ' '.join(self.command) + "'"
+        if print_message:
+            print('==> ' + print_message + ' <==')
         subprocess.call(new_command, shell=(len(new_command) == 1))
         self.last_run = time.time()
 
@@ -147,14 +161,18 @@ def main():
     files = []
     command = []
     recursive = False
-    verbose = False
+    verbose_mode = 0
     run_once = False
     run_at_start = False
 
     while args and args[0][0] == '-':
         flag = args.pop(0)
         if flag == '-v':
-            verbose = True
+            verbose_mode += 1
+        elif flag == '-vv':
+            verbose_mode = 2
+        elif flag == '-vvv':
+            verbose_mode = 3
         elif flag == '-r':
             recursive = True
         elif flag == '-1':
@@ -185,13 +203,14 @@ def main():
     if len(files) > 1:
         l = ["'%s'" % f for f in files]
         s = ', '.join(l[:-1]) + ' or ' + l[-1]
-        if verbose:
+        if verbose_mode:
             print("When %s changes, run '%s'" % (s, print_command))
     else:
-        if verbose:
+        if verbose_mode:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive, run_once, run_at_start)
+    wc = WhenChanged(files, command, recursive, run_once, run_at_start,
+                     verbose_mode)
 
     try:
         wc.run()
