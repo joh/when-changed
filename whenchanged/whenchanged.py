@@ -33,8 +33,12 @@ except ImportError:
     # Standard library
     import subprocess
 
-class CmdRunner():
+import os
 
+def is_running(pid):
+    if os.path.isdir('/proc/{}'.format(pid)):
+        return True
+    return False
 
 class WhenChanged(FileSystemEventHandler):
     # files to exclude from being watched
@@ -85,6 +89,7 @@ class WhenChanged(FileSystemEventHandler):
         if self.kill_and_replace:
             if self.current_process != None and self.current_process.returncode == None:
                 self.kill()
+        self.all_pids.remove(self.current_process.pid)
         self.current_process = subprocess.Popen(formatted_command, stdin=sys.stdin, stdout=sys.stdout, shell=(len(formatted_command) == 1), preexec_fn=os.setpgrp)
         self.all_pids.add(self.current_process.pid)
         self.last_run = time.time()
@@ -140,7 +145,8 @@ class WhenChanged(FileSystemEventHandler):
         self.observer.start()
         try:
             while True:
-                time.sleep(60 * 60)
+                time.sleep(1)
+                self.all_pids = set([pid if is_running(pid) for pid in self.all_pids]) #make sure we remove any pids that have finished
         except KeyboardInterrupt:
             self.shutdown()
         self.observer.join()
