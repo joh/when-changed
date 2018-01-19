@@ -34,33 +34,6 @@ except ImportError:
     import subprocess
 
 class CmdRunner():
-    def __init__(self, command, kill_and_replace=False):
-        self.command = command
-        self.kill_and_replace = kill_and_replace
-        self.current_process = None
-        self.all_pids = []
-
-    def run(self, path):
-        new_command = []
-        for item in self.command:
-            new_command.append(item.replace('%f', path))
-        if self.kill_and_replace:
-            if self.current_process != None and self.current_process.returncode == None:
-                self.kill()
-        self.current_process = subprocess.Popen(new_command, stdin=sys.stdin, stdout=sys.stdout, shell=(len(new_command) == 1), preexec_fn=os.setpgrp)
-        self.all_pids.append(self.current_process.pid)
-
-    def kill(self):
-        os.killpg(os.getpgid(self.current_process.pid), signal.SIGTERM)
-        self.current_process.wait()
-
-    def shutdown(self):
-        for pid in self.all_pids:
-            try: 
-                os.killpg(os.getpgid(pid), signal.SIGTERM)
-            except Exception:
-                pass
-
 
 
 class WhenChanged(FileSystemEventHandler):
@@ -78,7 +51,7 @@ class WhenChanged(FileSystemEventHandler):
         r'__pycache__/?',
         ]))
 
-    def __init__(self, files, recursive=False, run_once=False, run_at_start=False, runner=None):
+    def __init__(self, files, command, recursive=False, run_once=False, run_at_start=False, kill_and_replace=False):
         self.files = files
         paths = {}
         for f in files:
@@ -88,7 +61,10 @@ class WhenChanged(FileSystemEventHandler):
         self.run_once = run_once
         self.run_at_start = run_at_start
         self.last_run = 0
-        self.runner = runner 
+        self.command = command
+        self.kill_and_replace = kill_and_replace
+        self.current_process = None
+        self.all_pids = set()
 
         self.observer = Observer(timeout=0.1)
 
@@ -101,13 +77,22 @@ class WhenChanged(FileSystemEventHandler):
                 p = os.path.dirname(p)
                 self.observer.schedule(self, p)
 
-
     def run_command(self, thefile):
         if self.run_once:
             if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
                 return
-        self.runner.run(thefile)
+        formatted_command = [item.replace('%f', thefile) for item in self.command]
+        if self.kill_and_replace:
+            if self.current_process != None and self.current_process.returncode == None:
+                self.kill()
+        self.current_process = subprocess.Popen(formatted_command, stdin=sys.stdin, stdout=sys.stdout, shell=(len(formatted_command) == 1), preexec_fn=os.setpgrp)
+        self.all_pids.add(self.current_process.pid)
         self.last_run = time.time()
+
+    def kill(self):
+        os.killpg(os.getpgid(self.current_process.pid), signal.SIGTERM)
+        self.all_pids.remove(self.current_process.pid)
+        self.current_process.wait()
 
     def is_interested(self, path):
         if self.exclude.match(path):
@@ -157,9 +142,16 @@ class WhenChanged(FileSystemEventHandler):
             while True:
                 time.sleep(60 * 60)
         except KeyboardInterrupt:
-            self.observer.stop()
-            self.runner.shutdown()
+            self.shutdown()
         self.observer.join()
+
+    def shutdown(self):
+        self.observer.stop()
+        for pid in self.all_pids:
+            try: 
+                os.killpg(os.getpgid(pid), signal.SIGTERM)
+            except Exception:
+                pass
 
 
 def print_usage(prog):
@@ -224,8 +216,7 @@ def main():
         if verbose:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    runner = CmdRunner(command, kill_and_replace)
-    wc = WhenChanged(files, recursive, run_once, run_at_start, runner)
+    wc = WhenChanged(files, commaned, recursive, run_once, run_at_start, runner, kill_and_replace)
 
     try:
         wc.run()
