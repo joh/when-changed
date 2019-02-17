@@ -32,10 +32,15 @@
 
     ~ Usage
 
-      when-changed FILE COMMAND...
-      when-changed FILE [FILE ...] -c COMMAND
+      when-changed [OPTION] FILE COMMAND...
+      when-changed [OPTION] FILE [FILE ...] -c COMMAND
 
-      `%f` gets replaced with the file that changed:
+      FILE can be a directory. Use %f to pass the filename to the command.
 
-      when-changed FILE [FILE ...] -c echo '%f changed'
+      Options:
+      -r Watch recursively
+      -v Verbose output. Multiple -v options increase the verbosity.
+         The maximum is 3: -vvv.
+      -1 Don't re-run command if files changed while command was running
+      -s Run command immediately at start
 
