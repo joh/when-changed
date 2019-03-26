@@ -61,6 +61,7 @@ class WhenChanged(FileSystemEventHandler):
         self.run_at_start = run_at_start
         self.last_run = 0
         self.verbose_mode = verbose_mode
+        self.process_env = os.environ.copy()
 
         self.observer = Observer(timeout=0.1)
 
@@ -91,7 +92,7 @@ class WhenChanged(FileSystemEventHandler):
             print_message += '.' + now.strftime('%f') + ", running '" + ' '.join(self.command) + "'"
         if print_message:
             print('==> ' + print_message + ' <==')
-        subprocess.call(new_command, shell=(len(new_command) == 1))
+        subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env)
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -132,6 +133,9 @@ class WhenChanged(FileSystemEventHandler):
     def on_moved(self, event):
         if not event.is_directory:
             self.on_change(event.dest_path)
+
+    def set_envvar(self, name, value):
+        self.process_env['WHEN_CHANGED_' + name.upper()] = value
 
     def run(self):
         if self.run_at_start:
