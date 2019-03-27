@@ -141,7 +141,7 @@ class WhenChanged(FileSystemEventHandler):
 
     def on_moved(self, event):
         if not event.is_directory:
-            self.on_change(event.src_path, event)
+            self.on_change(event.dest_path, event)
 
     def on_deleted(self, event):
         if not event.is_directory:
