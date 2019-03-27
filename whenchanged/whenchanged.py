@@ -136,7 +136,7 @@ class WhenChanged(FileSystemEventHandler):
     def on_modified(self, event):
         if not event.is_directory and self.last_event_type != 'created':
             self.on_change(event.src_path, event)
-        elif not event.is_directory:
+        if not event.is_directory and self.last_event_type == 'created':
             self.last_event_type = event.event_type
 
     def on_moved(self, event):
