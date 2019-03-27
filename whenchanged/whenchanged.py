@@ -125,14 +125,17 @@ class WhenChanged(FileSystemEventHandler):
             return
 
         if not event.is_directory:
+            self.set_envvar('event', 'file_created')
             self.on_change(event.src_path)
 
     def on_modified(self, event):
         if not event.is_directory:
+            self.set_envvar('event', 'file_modified')
             self.on_change(event.src_path)
 
     def on_moved(self, event):
         if not event.is_directory:
+            self.set_envvar('event', 'file_moved')
             self.on_change(event.dest_path)
 
     def set_envvar(self, name, value):
