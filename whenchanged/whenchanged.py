@@ -92,6 +92,7 @@ class WhenChanged(FileSystemEventHandler):
             print_message += '.' + now.strftime('%f') + ", running '" + ' '.join(self.command) + "'"
         if print_message:
             print('==> ' + print_message + ' <==')
+        self.set_envvar('file', thefile)
         subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env)
         self.last_run = time.time()
 
