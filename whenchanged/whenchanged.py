@@ -15,11 +15,7 @@ Options:
 
 Environment variables:
 - WHEN_CHANGED_EVENT: reflects the current event type that occurs.
-    Could be either:
-        - file_created
-        - file_modified
-        - file_moved
-        - file_deleted
+    Could be either: file_created, file_modified, file_moved, file_deleted
 
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
