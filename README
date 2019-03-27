@@ -55,3 +55,5 @@
           - file_moved
           - file_deleted
 
+      - WHEN_CHANGED_FILE: provides the full path of the file that has generated the event.
+
