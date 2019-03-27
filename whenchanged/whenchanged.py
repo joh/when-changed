@@ -14,7 +14,7 @@ Options:
 -s Run command immediately at start
 
 Environment variables:
-- WHEN_CHANGED_EVENT: reflects the current event type that occures.
+- WHEN_CHANGED_EVENT: reflects the current event type that occurs.
     Could be either:
         - file_created
         - file_modified
