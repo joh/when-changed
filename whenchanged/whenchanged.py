@@ -125,29 +125,26 @@ class WhenChanged(FileSystemEventHandler):
     def on_change(self, path, event = None):
         if event is not None and not event.is_directory:
             self.last_event_type = event.event_type
+            self.set_envvar('event', 'file_' + event.event_type)
         if self.is_interested(path):
             self.run_command(path)
 
     def on_created(self, event):
         if not event.is_directory:
-            self.set_envvar('event', 'file_created')
             self.on_change(event.src_path, event)
 
     def on_modified(self, event):
         if not event.is_directory and self.last_event_type != 'created':
-            self.set_envvar('event', 'file_modified')
             self.on_change(event.src_path, event)
         elif not event.is_directory:
             self.last_event_type = event.event_type
 
     def on_moved(self, event):
         if not event.is_directory:
-            self.set_envvar('event', 'file_moved')
             self.on_change(event.src_path, event)
 
     def on_deleted(self, event):
         if not event.is_directory:
-            self.set_envvar('event', 'file_deleted')
             self.on_change(event.src_path, event)
 
     def set_envvar(self, name, value):
