@@ -85,7 +85,7 @@ class WhenChanged(FileSystemEventHandler):
         now = datetime.now()
         print_message = ''
         if self.verbose_mode > 0:
-            print_message = "'" + thefile + "' changed"
+            print_message = "'" + thefile + "' " + self.get_envvar('event')
         if self.verbose_mode > 1:
             print_message += ' at ' + now.strftime('%F %T')
         if self.verbose_mode > 2:
@@ -140,6 +140,9 @@ class WhenChanged(FileSystemEventHandler):
 
     def set_envvar(self, name, value):
         self.process_env['WHEN_CHANGED_' + name.upper()] = value
+
+    def get_envvar(self, name):
+        return self.process_env['WHEN_CHANGED_' + name.upper()]
 
     def run(self):
         if self.run_at_start:
