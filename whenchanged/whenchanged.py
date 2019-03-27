@@ -85,7 +85,7 @@ class WhenChanged(FileSystemEventHandler):
         now = datetime.now()
         print_message = ''
         if self.verbose_mode > 0:
-            print_message = "'" + thefile + "' " + self.get_envvar('event')
+            print_message = "'" + thefile + "' " + re.sub(r'^[^_]+_', '', self.get_envvar('event'))
         if self.verbose_mode > 1:
             print_message += ' at ' + now.strftime('%F %T')
         if self.verbose_mode > 2:
