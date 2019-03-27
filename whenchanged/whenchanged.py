@@ -13,6 +13,12 @@ Options:
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
 
+Environment variables:
+- WHEN_CHANGED_EVENT: reflects the current event type that occurs.
+    Could be either: file_created, file_modified, file_moved, file_deleted
+
+- WHEN_CHANGED_FILE: provides the full path of the file that has generated the event.
+
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
 """
@@ -85,7 +91,7 @@ class WhenChanged(FileSystemEventHandler):
         now = datetime.now()
         print_message = ''
         if self.verbose_mode > 0:
-            print_message = "'" + thefile + "' changed"
+            print_message = "'" + thefile + "' " + re.sub(r'^[^_]+_', '', self.get_envvar('event'))
         if self.verbose_mode > 1:
             print_message += ' at ' + now.strftime('%F %T')
         if self.verbose_mode > 2:
@@ -125,18 +131,29 @@ class WhenChanged(FileSystemEventHandler):
             return
 
         if not event.is_directory:
+            self.set_envvar('event', 'file_created')
             self.on_change(event.src_path)
 
     def on_modified(self, event):
         if not event.is_directory:
+            self.set_envvar('event', 'file_modified')
             self.on_change(event.src_path)
 
     def on_moved(self, event):
         if not event.is_directory:
+            self.set_envvar('event', 'file_moved')
             self.on_change(event.dest_path)
+
+    def on_deleted(self, event):
+        if not event.is_directory:
+            self.set_envvar('event', 'file_deleted')
+            self.on_change(event.src_path)
 
     def set_envvar(self, name, value):
         self.process_env['WHEN_CHANGED_' + name.upper()] = value
+
+    def get_envvar(self, name):
+        return self.process_env['WHEN_CHANGED_' + name.upper()]
 
     def run(self):
         if self.run_at_start:

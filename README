@@ -44,3 +44,16 @@
       -1 Don't re-run command if files changed while command was running
       -s Run command immediately at start
 
+    ~ Environment variables
+
+      when-changed provides the following environment variables:
+
+      - WHEN_CHANGED_EVENT: reflects the current event type that occurs.
+        Could be either:
+          - file_created
+          - file_modified
+          - file_moved
+          - file_deleted
+
+      - WHEN_CHANGED_FILE: provides the full path of the file that has generated the event.
+
