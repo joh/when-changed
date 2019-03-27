@@ -138,6 +138,11 @@ class WhenChanged(FileSystemEventHandler):
             self.set_envvar('event', 'file_moved')
             self.on_change(event.dest_path)
 
+    def on_deleted(self, event):
+        if not event.is_directory:
+            self.set_envvar('event', 'file_deleted')
+            self.on_change(event.src_path)
+
     def set_envvar(self, name, value):
         self.process_env['WHEN_CHANGED_' + name.upper()] = value
 
