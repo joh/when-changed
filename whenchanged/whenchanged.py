@@ -13,6 +13,14 @@ Options:
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
 
+Environment variables:
+- WHEN_CHANGED_EVENT: reflects the current event type that occures.
+    Could be either:
+        - file_created
+        - file_modified
+        - file_moved
+        - file_deleted
+
 Copyright (c) 2011-2016, Johannes H. Jensen.
 License: BSD, see LICENSE for more details.
 """
