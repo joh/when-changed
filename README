@@ -43,6 +43,7 @@
          The maximum is 3: -vvv.
       -1 Don't re-run command if files changed while command was running
       -s Run command immediately at start
+      -q Run command quietly
 
     ~ Environment variables
 
