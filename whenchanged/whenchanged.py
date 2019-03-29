@@ -237,5 +237,5 @@ def main():
     try:
         wc.run()
     except KeyboardInterrupt:
-        print()
+        print('^C')
         exit(0)
