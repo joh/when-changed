@@ -12,6 +12,7 @@ Options:
    The maximum is 3: -vvv.
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
+-q Run command quietly
 
 Environment variables:
 - WHEN_CHANGED_EVENT: reflects the current event type that occurs.
@@ -55,7 +56,7 @@ class WhenChanged(FileSystemEventHandler):
         ]))
 
     def __init__(self, files, command, recursive=False, run_once=False,
-                 run_at_start=False, verbose_mode=0):
+                 run_at_start=False, verbose_mode=0, quiet_mode=False):
         self.files = files
         paths = {}
         for f in files:
@@ -67,6 +68,7 @@ class WhenChanged(FileSystemEventHandler):
         self.run_at_start = run_at_start
         self.last_run = 0
         self.verbose_mode = verbose_mode
+        self.quiet_mode = quiet_mode
         self.process_env = os.environ.copy()
 
         self.observer = Observer(timeout=0.1)
@@ -99,7 +101,8 @@ class WhenChanged(FileSystemEventHandler):
         if print_message:
             print('==> ' + print_message + ' <==')
         self.set_envvar('file', thefile)
-        subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env)
+        stdout = open(os.devnull, 'wb') if self.quiet_mode else None
+        subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env, stdout=stdout)
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -186,6 +189,7 @@ def main():
     verbose_mode = 0
     run_once = False
     run_at_start = False
+    quiet_mode = False
 
     while args and args[0][0] == '-':
         flag = args.pop(0)
@@ -204,6 +208,8 @@ def main():
         elif flag == '-c':
             command = args
             args = []
+        elif flag == '-q':
+            quiet_mode = True
         else:
             break
 
@@ -232,7 +238,7 @@ def main():
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
     wc = WhenChanged(files, command, recursive, run_once, run_at_start,
-                     verbose_mode)
+                     verbose_mode, quiet_mode)
 
     try:
         wc.run()
