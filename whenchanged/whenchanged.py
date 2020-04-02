@@ -13,6 +13,7 @@ Options:
 -1 Don't re-run command if files changed while command was running
 -s Run command immediately at start
 -q Run command quietly
+-k Kill the currently running command and kick off a fresh one if a file changes
 
 Environment variables:
 - WHEN_CHANGED_EVENT: reflects the current event type that occurs.
@@ -29,6 +30,8 @@ from __future__ import print_function
 import sys
 import os
 import re
+import multiprocessing
+import signal
 import time
 from datetime import datetime
 from watchdog.observers import Observer
@@ -56,7 +59,8 @@ class WhenChanged(FileSystemEventHandler):
         ]))
 
     def __init__(self, files, command, recursive=False, run_once=False,
-                 run_at_start=False, verbose_mode=0, quiet_mode=False):
+                 run_at_start=False, verbose_mode=0, quiet_mode=False,
+                 kill_running=False):
         self.files = files
         paths = {}
         for f in files:
@@ -69,8 +73,10 @@ class WhenChanged(FileSystemEventHandler):
         self.last_run = 0
         self.verbose_mode = verbose_mode
         self.quiet_mode = quiet_mode
+        self.kill_running = kill_running
         self.process_env = os.environ.copy()
 
+        self.command_process = None
         self.observer = Observer(timeout=0.1)
 
         for p in self.paths:
@@ -102,7 +108,14 @@ class WhenChanged(FileSystemEventHandler):
             print('==> ' + print_message + ' <==')
         self.set_envvar('file', thefile)
         stdout = open(os.devnull, 'wb') if self.quiet_mode else None
-        subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env, stdout=stdout)
+
+        if self.kill_running:
+            if self.command_process and self.command_process.poll() == None:
+                self.kill_command_process()
+            self.command_process = subprocess.Popen(new_command, shell=(len(new_command) == 1), \
+                    env=self.process_env, stdout=stdout, preexec_fn=os.setsid)
+        else:
+            subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env, stdout=stdout)
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -158,6 +171,11 @@ class WhenChanged(FileSystemEventHandler):
     def get_envvar(self, name):
         return self.process_env['WHEN_CHANGED_' + name.upper()]
 
+    def kill_command_process(self):
+        if self.command_process:
+            pgid = os.getpgid(self.command_process.pid)
+            os.killpg(pgid, signal.SIGTERM)
+
     def run(self):
         if self.run_at_start:
             self.run_command('/dev/null')
@@ -168,8 +186,8 @@ class WhenChanged(FileSystemEventHandler):
                 time.sleep(60 * 60)
         except KeyboardInterrupt:
             self.observer.stop()
+            self.kill_command_process()
         self.observer.join()
-
 
 def print_usage(prog):
     print(__doc__ % {'prog': prog}, end='')
@@ -190,6 +208,7 @@ def main():
     run_once = False
     run_at_start = False
     quiet_mode = False
+    kill_running = False
 
     while args and args[0][0] == '-':
         flag = args.pop(0)
@@ -210,6 +229,8 @@ def main():
             args = []
         elif flag == '-q':
             quiet_mode = True
+        elif flag == '-k':
+            kill_running = True
         else:
             break
 
@@ -238,7 +259,7 @@ def main():
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
     wc = WhenChanged(files, command, recursive, run_once, run_at_start,
-                     verbose_mode, quiet_mode)
+                     verbose_mode, quiet_mode, kill_running)
 
     try:
         wc.run()
