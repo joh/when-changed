@@ -71,7 +71,8 @@ class WhenChanged(FileSystemEventHandler):
         self.quiet_mode = quiet_mode
         self.process_env = os.environ.copy()
         self.excludes.extend(excludes)
-        self.exclude = re.compile(r'|'.join(r'(.+/)?'+ a for a in self.excludes)
+        self.exclude = re.compile(r'|'.join(
+            r'(.+/)?' + a for a in self.excludes))
         self.observer = Observer(timeout=0.1)
 
         for p in self.paths:
