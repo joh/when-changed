@@ -42,7 +42,7 @@ except ImportError:
 
 class WhenChanged(FileSystemEventHandler):
     # files to exclude from being watched
-    exclude = re.compile(r'|'.join(r'(.+/)?'+ a for a in [
+    excludes = [
         # Vim swap files
         r'\..*\.sw[px]*$',
         # file creation test file 4913
@@ -53,9 +53,9 @@ class WhenChanged(FileSystemEventHandler):
         r'\.git/?',
         # __pycache__ directories
         r'__pycache__/?',
-        ]))
+    ]
 
-    def __init__(self, files, command, recursive=False, run_once=False,
+    def __init__(self, files, excludes, command, recursive=False, run_once=False,
                  run_at_start=False, verbose_mode=0, quiet_mode=False):
         self.files = files
         paths = {}
@@ -70,7 +70,8 @@ class WhenChanged(FileSystemEventHandler):
         self.verbose_mode = verbose_mode
         self.quiet_mode = quiet_mode
         self.process_env = os.environ.copy()
-
+        self.excludes.extend(excludes)
+        self.exclude = re.compile(r'|'.join(r'(.+/)?'+ a for a in self.excludes)
         self.observer = Observer(timeout=0.1)
 
         for p in self.paths:
@@ -185,6 +186,7 @@ def main():
 
     files = []
     command = []
+    excludes = []
     recursive = False
     verbose_mode = 0
     run_once = False
@@ -208,6 +210,8 @@ def main():
         elif flag == '-c':
             command = args
             args = []
+        elif flag == '-x':
+            excludes.append(args[0][1])
         elif flag == '-q':
             quiet_mode = True
         else:
@@ -237,7 +241,7 @@ def main():
         if verbose_mode:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
 
-    wc = WhenChanged(files, command, recursive, run_once, run_at_start,
+    wc = WhenChanged(files, excludes, command, recursive, run_once, run_at_start,
                      verbose_mode, quiet_mode)
 
     try:
