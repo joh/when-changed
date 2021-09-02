@@ -55,8 +55,15 @@ class WhenChanged(FileSystemEventHandler):
         r'__pycache__/?',
     ]
 
-    def __init__(self, files, excludes, command, recursive=False, run_once=False,
-                 run_at_start=False, verbose_mode=0, quiet_mode=False):
+    def __init__(self,
+                 files,
+                 excludes,
+                 command,
+                 recursive=False,
+                 run_once=False,
+                 run_at_start=False,
+                 verbose_mode=0,
+                 quiet_mode=False):
         self.files = files
         paths = {}
         for f in files:
@@ -84,10 +91,10 @@ class WhenChanged(FileSystemEventHandler):
                 p = os.path.dirname(p)
                 self.observer.schedule(self, p)
 
-
     def run_command(self, thefile):
         if self.run_once:
-            if os.path.exists(thefile) and os.path.getmtime(thefile) < self.last_run:
+            if os.path.exists(
+                    thefile) and os.path.getmtime(thefile) < self.last_run:
                 return
         new_command = []
         for item in self.command:
@@ -95,16 +102,21 @@ class WhenChanged(FileSystemEventHandler):
         now = datetime.now()
         print_message = ''
         if self.verbose_mode > 0:
-            print_message = "'" + thefile + "' " + re.sub(r'^[^_]+_', '', self.get_envvar('event'))
+            print_message = "'" + thefile + "' " + re.sub(
+                r'^[^_]+_', '', self.get_envvar('event'))
         if self.verbose_mode > 1:
             print_message += ' at ' + now.strftime('%F %T')
         if self.verbose_mode > 2:
-            print_message += '.' + now.strftime('%f') + ", running '" + ' '.join(self.command) + "'"
+            print_message += '.' + now.strftime(
+                '%f') + ", running '" + ' '.join(self.command) + "'"
         if print_message:
             print('==> ' + print_message + ' <==')
         self.set_envvar('file', thefile)
         stdout = open(os.devnull, 'wb') if self.quiet_mode else None
-        subprocess.call(new_command, shell=(len(new_command) == 1), env=self.process_env, stdout=stdout)
+        subprocess.call(new_command,
+                        shell=(len(new_command) == 1),
+                        env=self.process_env,
+                        stdout=stdout)
         self.last_run = time.time()
 
     def is_interested(self, path):
@@ -211,8 +223,6 @@ def main():
         elif flag == '-c':
             command = args
             args = []
-        elif flag == '-x':
-            excludes.append(args[0][1])
         elif flag == '-q':
             quiet_mode = True
         else:
@@ -241,9 +251,10 @@ def main():
     else:
         if verbose_mode:
             print("When '%s' changes, run '%s'" % (files[0], print_command))
-
-    wc = WhenChanged(files, excludes, command, recursive, run_once, run_at_start,
-                     verbose_mode, quiet_mode)
+    excludes = [f.lstrip('-') for f in files if f.startswith('-')]
+    files = [f for f in files if not f.startswith('-')]
+    wc = WhenChanged(files, excludes, command, recursive, run_once,
+                     run_at_start, verbose_mode, quiet_mode)
 
     try:
         wc.run()
