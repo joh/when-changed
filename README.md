@@ -26,8 +26,9 @@ Sweetness!
 
 
 ### Installation
-
-pip install: https://github.com/joh/when-changed/archive/master.zip
+```sh
+pip install https://github.com/joh/when-changed/archive/master.zip
+```
 
 
 ### Usage
