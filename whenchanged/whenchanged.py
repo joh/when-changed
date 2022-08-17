@@ -156,7 +156,7 @@ class WhenChanged(FileSystemEventHandler):
         self.process_env['WHEN_CHANGED_' + name.upper()] = value
 
     def get_envvar(self, name):
-        return self.process_env['WHEN_CHANGED_' + name.upper()]
+        return self.process_env.get('WHEN_CHANGED_' + name.upper())
 
     def run(self):
         if self.run_at_start:
