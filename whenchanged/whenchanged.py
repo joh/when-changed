@@ -70,6 +70,7 @@ class WhenChanged(FileSystemEventHandler):
         self.verbose_mode = verbose_mode
         self.quiet_mode = quiet_mode
         self.process_env = os.environ.copy()
+        self.last_event_type = ''
 
         self.observer = Observer(timeout=0.1)
 
@@ -124,33 +125,30 @@ class WhenChanged(FileSystemEventHandler):
 
         return False
 
-    def on_change(self, path):
+    def on_change(self, path, event = None):
+        if event is not None and not event.is_directory:
+            self.last_event_type = event.event_type
+            self.set_envvar('event', 'file_' + event.event_type)
         if self.is_interested(path):
             self.run_command(path)
 
     def on_created(self, event):
-        if self.observer.__class__.__name__ == 'InotifyObserver':
-            # inotify also generates modified events for created files
-            return
-
         if not event.is_directory:
-            self.set_envvar('event', 'file_created')
-            self.on_change(event.src_path)
+            self.on_change(event.src_path, event)
 
     def on_modified(self, event):
-        if not event.is_directory:
-            self.set_envvar('event', 'file_modified')
-            self.on_change(event.src_path)
+        if not event.is_directory and self.last_event_type != 'created':
+            self.on_change(event.src_path, event)
+        if not event.is_directory and self.last_event_type == 'created':
+            self.last_event_type = event.event_type
 
     def on_moved(self, event):
         if not event.is_directory:
-            self.set_envvar('event', 'file_moved')
-            self.on_change(event.dest_path)
+            self.on_change(event.dest_path, event)
 
     def on_deleted(self, event):
         if not event.is_directory:
-            self.set_envvar('event', 'file_deleted')
-            self.on_change(event.src_path)
+            self.on_change(event.src_path, event)
 
     def set_envvar(self, name, value):
         self.process_env['WHEN_CHANGED_' + name.upper()] = value
