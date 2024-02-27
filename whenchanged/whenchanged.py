@@ -160,6 +160,7 @@ class WhenChanged(FileSystemEventHandler):
 
     def run(self):
         if self.run_at_start:
+            self.set_envvar('event', 'start')
             self.run_command('/dev/null')
 
         self.observer.start()
